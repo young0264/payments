@@ -22,9 +22,11 @@ class PaymentService(
         // 멱등성 체크: 같은 키로 이미 처리된 결제가 있으면 그대로 리턴
         paymentRepository.findByIdempotencyKey(idempotencyKey)?.let { return it }
 
-        // 중복 주문 체크
-        if (paymentRepository.findByOrderId(orderId) != null) {
-            throw PaymentException(ErrorCode.DUPLICATE_ORDER)
+        // 중복 주문 체크 (FAILED면 재시도 허용)
+        paymentRepository.findByOrderId(orderId)?.let { existing ->
+            if (existing.status != PaymentStatus.FAILED) {
+                throw PaymentException(ErrorCode.DUPLICATE_ORDER)
+            }
         }
 
         // 결제 생성 (READY)
