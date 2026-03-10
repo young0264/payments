@@ -14,7 +14,7 @@ class Payment(
     @Column(nullable = false, unique = true, length = 64)
     val orderId: String,
 
-    @Column(nullable = false, length = 36)
+    @Column(nullable = false, unique = true, length = 36)
     val idempotencyKey: String,
 
     @Column(nullable = false, precision = 15, scale = 2)
