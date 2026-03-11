@@ -159,3 +159,4 @@ docker compose up -d
 ### 문서
 - [토스페이먼츠 API 문서](https://toss.im/payments/docs)
 - [토스페이먼츠 멱등성 문서](https://docs.tosspayments.com/blog/what-is-idempotency)
+- [토스페이먼츠 승인/매입 문서](https://www.tosspayments.com/blog/articles/33907)
