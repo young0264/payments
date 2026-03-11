@@ -6,6 +6,8 @@ import com.payments.payment.dto.PaymentResponse
 import com.payments.payment.service.PaymentService
 import jakarta.validation.Valid
 import org.springframework.http.ResponseEntity
+import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
@@ -24,6 +26,12 @@ class PaymentController(
             idempotencyKey = request.idempotencyKey,
             amount = request.amount,
         )
+        return ResponseEntity.ok(PaymentResponse.from(payment))
+    }
+
+    @GetMapping("/{orderId}")
+    fun getPayment(@PathVariable orderId: String): ResponseEntity<PaymentResponse> {
+        val payment = paymentService.getByOrderId(orderId)
         return ResponseEntity.ok(PaymentResponse.from(payment))
     }
 

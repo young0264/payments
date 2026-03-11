@@ -54,6 +54,11 @@ class PaymentService(
         return payment
     }
 
+    fun getByOrderId(orderId: String): Payment {
+        return paymentRepository.findByOrderId(orderId)
+            ?: throw PaymentException(ErrorCode.PAYMENT_NOT_FOUND)
+    }
+
     @Transactional
     fun cancel(orderId: String): Payment {
         val payment = paymentRepository.findByOrderId(orderId)
