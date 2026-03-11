@@ -45,6 +45,32 @@ READY → APPROVED → CAPTURED
 FAILED  CANCELED   CANCELED / PARTIAL_CANCELED
 ```
 
+### 동시성 제어 (분산 락)
+
+같은 orderId로 동시에 요청이 들어올 때 중복 결제를 방지하기 위해 Redis 분산 락을 사용한다.
+
+```
+서버A → Redis: "lock:payment:order-1" 획득 → 결제 처리
+서버B → Redis: "lock:payment:order-1" 획득 시도 → 이미 있음 → 거부
+```
+
+- **왜 Redis인가?**: 애플리케이션 레벨 락(synchronized, ReentrantLock)은 한 서버 안에서만 동작한다. 서버가 여러 대면 각 서버의 락이 독립적이라 동시 요청을 막을 수 없다. 외부 저장소(Redis)에 락을 두면 모든 서버가 같은 곳을 바라보기 때문에 서버 수와 관계없이 동시성 제어가 가능하다.
+- **SETNX**: Redis의 원자적 연산. 키가 없을 때만 값을 설정하므로 동시 요청 중 하나만 성공한다.
+- **TTL**: 락에 만료 시간을 설정하여 서버 장애 시 락이 영원히 안 풀리는 것을 방지한다.
+
+### 멱등성 처리
+
+가맹점이 네트워크 타임아웃 등으로 같은 결제를 재시도할 때 중복 결제를 방지한다.
+
+```
+1. 최초 요청: orderId="order-1", idempotencyKey="key-1" → 결제 처리
+2. 재시도:    orderId="order-1", idempotencyKey="key-1" → 기존 결과 리턴 (중복 결제 X)
+3. 새 시도:   orderId="order-1", idempotencyKey="key-2" → FAILED 상태면 재시도 허용
+```
+
+- `idempotencyKey`는 가맹점이 생성하여 요청에 포함. DB에 UNIQUE 제약으로 유일성 보장.
+- 같은 키로 재요청 시 기존 결제를 그대로 리턴하고, 다른 키로 같은 주문 요청 시 DUPLICATE_ORDER 에러.
+
 ## API 스펙
 
 ### 결제 승인
@@ -101,9 +127,9 @@ docker compose up -d
 - [x] 멱등성 처리 (idempotencyKey)
 - [x] PG 커넥터 추상화 + Mock PG
 - [x] Flyway 마이그레이션
-- [ ] 동시성 제어 (Redis 분산 락)
+- [x] 동시성 제어 (Redis 분산 락)
+- [x] 결제 조회 API
 - [ ] 매입(CAPTURED) 처리
-- [ ] 결제 조회 API
 - [ ] 금액 위변조 검증
 
 ### Phase 2 — 내결함성
