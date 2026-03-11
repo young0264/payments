@@ -2,6 +2,7 @@ package com.payments.payment.controller
 
 import com.payments.payment.dto.ApproveRequest
 import com.payments.payment.dto.CancelRequest
+import com.payments.payment.dto.CaptureRequest
 import com.payments.payment.dto.PaymentResponse
 import com.payments.payment.service.PaymentService
 import jakarta.validation.Valid
@@ -32,6 +33,12 @@ class PaymentController(
     @GetMapping("/{orderId}")
     fun getPayment(@PathVariable orderId: String): ResponseEntity<PaymentResponse> {
         val payment = paymentService.getByOrderId(orderId)
+        return ResponseEntity.ok(PaymentResponse.from(payment))
+    }
+
+    @PostMapping("/capture")
+    fun capture(@Valid @RequestBody request: CaptureRequest): ResponseEntity<PaymentResponse> {
+        val payment = paymentService.capture(orderId = request.orderId)
         return ResponseEntity.ok(PaymentResponse.from(payment))
     }
 

@@ -71,11 +71,36 @@ class PaymentService(
     }
 
     @Transactional
-    fun cancel(orderId: String): Payment {
+    fun capture(orderId: String): Payment {
         val payment = paymentRepository.findByOrderId(orderId)
             ?: throw PaymentException(ErrorCode.PAYMENT_NOT_FOUND)
 
         if (payment.status != PaymentStatus.APPROVED) {
+            throw PaymentException(ErrorCode.INVALID_PAYMENT_STATUS)
+        }
+
+        val txId = requireNotNull(payment.pgTransactionId) {
+            "pgTransactionId is null for orderId=${payment.orderId}"
+        }
+
+        val pgResponse = pgConnector.capture(txId, payment.amount)
+
+        if (pgResponse.success) {
+            payment.status = PaymentStatus.CAPTURED
+        } else {
+            throw PaymentException(ErrorCode.PG_CAPTURE_FAILED)
+        }
+        payment.updatedAt = LocalDateTime.now()
+
+        return payment
+    }
+
+    @Transactional
+    fun cancel(orderId: String): Payment {
+        val payment = paymentRepository.findByOrderId(orderId)
+            ?: throw PaymentException(ErrorCode.PAYMENT_NOT_FOUND)
+
+        if (payment.status != PaymentStatus.APPROVED && payment.status != PaymentStatus.CAPTURED) {
             throw PaymentException(ErrorCode.INVALID_PAYMENT_STATUS)
         }
 

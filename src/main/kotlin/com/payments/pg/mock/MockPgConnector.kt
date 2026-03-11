@@ -19,6 +19,14 @@ class MockPgConnector : PgConnector {
         )
     }
 
+    override fun capture(pgTransactionId: String, amount: BigDecimal): PgResponse {
+        return PgResponse(
+            success = true,
+            pgTransactionId = pgTransactionId,
+            message = "매입 완료",
+        )
+    }
+
     override fun cancel(pgTransactionId: String, amount: BigDecimal): PgResponse {
         return PgResponse(
             success = true,

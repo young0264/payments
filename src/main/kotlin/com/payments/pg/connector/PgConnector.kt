@@ -5,6 +5,7 @@ import java.math.BigDecimal
 interface PgConnector {
     val providerName: String
     fun approve(orderId: String, amount: BigDecimal): PgResponse
+    fun capture(pgTransactionId: String, amount: BigDecimal): PgResponse
     fun cancel(pgTransactionId: String, amount: BigDecimal): PgResponse
 }
 

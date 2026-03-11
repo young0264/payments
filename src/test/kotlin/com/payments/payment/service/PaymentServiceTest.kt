@@ -56,7 +56,7 @@ class PaymentServiceTest {
     }
 
     @Test
-    fun `APPROVED 상태가 아니면 취소 불가`() {
+    fun `APPROVED 또는 CAPTURED 상태가 아니면 취소 불가`() {
         paymentService.approve("order-5", "key-5", BigDecimal(2000))
         paymentService.cancel("order-5")
 
@@ -93,6 +93,36 @@ class PaymentServiceTest {
         }.also {
             assertThat(it.errorCode).isEqualTo(ErrorCode.PAYMENT_NOT_FOUND)
         }
+    }
+
+    @Test
+    fun `매입 성공`() {
+        paymentService.approve("order-capture-1", "key-capture-1", BigDecimal(10000))
+        val captured = paymentService.capture("order-capture-1")
+
+        assertThat(captured.status).isEqualTo(PaymentStatus.CAPTURED)
+        assertThat(captured.pgTransactionId).isNotNull()
+    }
+
+    @Test
+    fun `APPROVED가 아닌 상태에서 매입 시 예외`() {
+        paymentService.approve("order-capture-2", "key-capture-2", BigDecimal(5000))
+        paymentService.capture("order-capture-2")
+
+        assertThrows<PaymentException> {
+            paymentService.capture("order-capture-2")
+        }.also {
+            assertThat(it.errorCode).isEqualTo(ErrorCode.INVALID_PAYMENT_STATUS)
+        }
+    }
+
+    @Test
+    fun `매입 후 취소 성공`() {
+        paymentService.approve("order-capture-3", "key-capture-3", BigDecimal(8000))
+        paymentService.capture("order-capture-3")
+        val canceled = paymentService.cancel("order-capture-3")
+
+        assertThat(canceled.status).isEqualTo(PaymentStatus.CANCELED)
     }
 
     @Test
