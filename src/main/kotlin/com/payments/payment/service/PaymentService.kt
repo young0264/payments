@@ -2,6 +2,7 @@ package com.payments.payment.service
 
 import com.payments.common.exception.ErrorCode
 import com.payments.common.exception.PaymentException
+import com.payments.common.lock.DistributedLock
 import com.payments.payment.domain.Payment
 import com.payments.payment.domain.PaymentStatus
 import com.payments.payment.repository.PaymentRepository
@@ -15,12 +16,22 @@ import java.time.LocalDateTime
 class PaymentService(
     private val paymentRepository: PaymentRepository,
     private val pgConnector: PgConnector,
+    private val distributedLock: DistributedLock,
 ) {
 
-    @Transactional
     fun approve(orderId: String, idempotencyKey: String, amount: BigDecimal): Payment {
+        return distributedLock.withLock("payment:$orderId") {
+            doApprove(orderId, idempotencyKey, amount)
+        }
+    }
+
+    @Transactional
+    protected fun doApprove(orderId: String, idempotencyKey: String, amount: BigDecimal): Payment {
         // 멱등성 체크: 같은 키로 이미 처리된 결제가 있으면 그대로 리턴
         paymentRepository.findByIdempotencyKey(idempotencyKey)?.let { return it }
+
+        //  APPROVED, CAPTURED, CANCELED → 이미 처리된 결제. 또 결제하면 안 됨 → DUPLICATE_ORDER
+        //  FAILED                       → 이전에 실패한 건. 다시 시도해도 됨 → 통과
 
         // 중복 주문 체크 (FAILED면 재시도 허용)
         paymentRepository.findByOrderId(orderId)?.let { existing ->

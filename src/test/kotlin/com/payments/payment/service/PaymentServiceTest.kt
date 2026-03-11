@@ -66,4 +66,43 @@ class PaymentServiceTest {
             assertThat(it.errorCode).isEqualTo(ErrorCode.INVALID_PAYMENT_STATUS)
         }
     }
+
+    @Test
+    fun `승인 시 pgTransactionId가 저장된다`() {
+        val payment = paymentService.approve("order-6", "key-6", BigDecimal(15000))
+
+        assertThat(payment.pgTransactionId).isNotNull()
+        assertThat(payment.pgTransactionId).startsWith("mock-")
+    }
+
+    @Test
+    fun `결제 조회 성공`() {
+        val approved = paymentService.approve("order-7", "key-7", BigDecimal(8000))
+        val found = paymentService.getByOrderId("order-7")
+
+        assertThat(found.id).isEqualTo(approved.id)
+        assertThat(found.orderId).isEqualTo("order-7")
+        assertThat(found.amount).isEqualByComparingTo(BigDecimal(8000))
+        assertThat(found.status).isEqualTo(PaymentStatus.APPROVED)
+    }
+
+    @Test
+    fun `존재하지 않는 orderId 조회 시 PAYMENT_NOT_FOUND`() {
+        assertThrows<PaymentException> {
+            paymentService.getByOrderId("non-existent-order")
+        }.also {
+            assertThat(it.errorCode).isEqualTo(ErrorCode.PAYMENT_NOT_FOUND)
+        }
+    }
+
+    @Test
+    fun `취소 후에도 pgTransactionId는 유지된다`() {
+        val approved = paymentService.approve("order-8", "key-8", BigDecimal(20000))
+        val pgTxId = approved.pgTransactionId
+
+        val canceled = paymentService.cancel("order-8")
+
+        assertThat(canceled.status).isEqualTo(PaymentStatus.CANCELED)
+        assertThat(canceled.pgTransactionId).isEqualTo(pgTxId)
+    }
 }
