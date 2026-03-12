@@ -190,6 +190,7 @@ docker compose up -d
 - [ ] 모니터링 (메트릭 수집, 알림)
 - [ ] 웹훅 (PG → 가맹점 비동기 알림)
 - [ ] 인증/인가 (가맹점 API Key)
+- [ ] 테스트는 Testcontainers로 변경
 
 
 ## 참고
