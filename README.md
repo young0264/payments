@@ -15,6 +15,7 @@
 | Build | Gradle (Kotlin DSL) |
 | JDK | 21 |
 | Docs | Swagger (springdoc-openapi) |
+| Resilience | Resilience4j |
 
 ## 아키텍처
 
@@ -86,6 +87,19 @@ PaymentService (분산 락) → PaymentTransactionService (@Transactional)
 
 - `idempotencyKey`는 가맹점이 생성하여 요청에 포함. DB에 UNIQUE 제약으로 유일성 보장.
 - 같은 키로 재요청 시 기존 결제를 그대로 리턴하고, 다른 키로 같은 주문 요청 시 DUPLICATE_ORDER 에러.
+
+### Circuit Breaker (PG 장애 격리)
+
+PG사 장애 시 타임아웃까지 대기하며 연쇄 장애가 발생하는 것을 방지한다. Resilience4j Circuit Breaker를 데코레이터 패턴으로 적용하여 기존 서비스 코드 변경 없이 PG 호출을 보호한다.
+
+```
+정상: PaymentTransactionService → CircuitBreakerPgConnector → MockPgConnector → 응답
+장애: PaymentTransactionService → CircuitBreakerPgConnector → 서킷 OPEN → 즉시 503 응답
+```
+
+- 최근 10건 중 실패율 50% 초과 시 서킷 OPEN
+- 30초 후 HALF_OPEN으로 전환, 3건 테스트 호출로 복구 판단
+- PG 비즈니스 실패(잔액 부족 등)는 서킷에 영향 없음
 
 ## API 스펙
 
@@ -159,9 +173,10 @@ docker compose up -d
 - [x] 금액 위변조 검증 (PG 승인 금액 불일치 시 자동 취소)
 
 ### Phase 2 — 내결함성
-- [ ] Circuit Breaker
+- [x] Circuit Breaker
 - [ ] PG 라우팅 (장애 시 다른 PG로 전환)
 - [ ] 재시도 전략
+- [ ] 부분 취소
 
 ### Phase 3 — 원장/대사
 - [ ] 복식부기 원장
@@ -170,6 +185,12 @@ docker compose up -d
 ### Phase 4 — 정산/빌링
 - [ ] Kafka 기반 정산 배치
 - [ ] 가맹점 정산금 계산
+
+### Phase 5 — 운영
+- [ ] 모니터링 (메트릭 수집, 알림)
+- [ ] 웹훅 (PG → 가맹점 비동기 알림)
+- [ ] 인증/인가 (가맹점 API Key)
+- [ ] 테스트는 Testcontainers로 변경
 
 
 ## 참고
@@ -183,6 +204,6 @@ docker compose up -d
 | [samchon/payments](https://github.com/samchon/payments) | TypeScript | PG 통합 연동, 웹훅, 빌링 |
 
 ### 문서
-- [토스페이먼츠 API 문서](https://toss.im/payments/docs)
+- [토스페이먼츠 블로그(용어사전/가이드/샌드박스)](https://docs.tosspayments.com/blog)
 - [토스페이먼츠 멱등성 문서](https://docs.tosspayments.com/blog/what-is-idempotency)
 - [토스페이먼츠 승인/매입 문서](https://www.tosspayments.com/blog/articles/33907)
