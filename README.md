@@ -203,6 +203,6 @@ docker compose up -d
 | [samchon/payments](https://github.com/samchon/payments) | TypeScript | PG 통합 연동, 웹훅, 빌링 |
 
 ### 문서
-- [토스페이먼츠 API 문서](https://toss.im/payments/docs)
+- [토스페이먼츠 블로그(용어사전/가이드/샌드박스)](https://docs.tosspayments.com/blog)
 - [토스페이먼츠 멱등성 문서](https://docs.tosspayments.com/blog/what-is-idempotency)
 - [토스페이먼츠 승인/매입 문서](https://www.tosspayments.com/blog/articles/33907)
