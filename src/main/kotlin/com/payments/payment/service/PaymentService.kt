@@ -70,8 +70,14 @@ class PaymentService(
             ?: throw PaymentException(ErrorCode.PAYMENT_NOT_FOUND)
     }
 
-    @Transactional
     fun capture(orderId: String): Payment {
+        return distributedLock.withLock("payment:$orderId") {
+            doCapture(orderId)
+        }
+    }
+
+    @Transactional
+    protected fun doCapture(orderId: String): Payment {
         val payment = paymentRepository.findByOrderId(orderId)
             ?: throw PaymentException(ErrorCode.PAYMENT_NOT_FOUND)
 
@@ -95,8 +101,14 @@ class PaymentService(
         return payment
     }
 
-    @Transactional
     fun cancel(orderId: String): Payment {
+        return distributedLock.withLock("payment:$orderId") {
+            doCancel(orderId)
+        }
+    }
+
+    @Transactional
+    protected fun doCancel(orderId: String): Payment {
         val payment = paymentRepository.findByOrderId(orderId)
             ?: throw PaymentException(ErrorCode.PAYMENT_NOT_FOUND)
 
