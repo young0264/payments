@@ -22,6 +22,18 @@ class GlobalExceptionHandler : ResponseEntityExceptionHandler() {
             .body(ErrorResponse(e.errorCode.name, e.message))
     }
 
+    override fun handleExceptionInternal(
+        ex: Exception,
+        body: Any?,
+        headers: HttpHeaders,
+        status: HttpStatusCode,
+        request: WebRequest,
+    ): ResponseEntity<Any>? {
+        return ResponseEntity
+            .status(status)
+            .body(ErrorResponse("INTERNAL_ERROR", ex.message ?: "알 수 없는 오류가 발생했습니다"))
+    }
+
     override fun handleMethodArgumentNotValid(
         ex: MethodArgumentNotValidException,
         headers: HttpHeaders,
