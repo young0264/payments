@@ -176,6 +176,7 @@ docker compose up -d
 - [x] Circuit Breaker
 - [ ] PG 라우팅 (장애 시 다른 PG로 전환)
 - [ ] 재시도 전략
+- [ ] 부분 취소
 
 ### Phase 3 — 원장/대사
 - [ ] 복식부기 원장
@@ -184,6 +185,11 @@ docker compose up -d
 ### Phase 4 — 정산/빌링
 - [ ] Kafka 기반 정산 배치
 - [ ] 가맹점 정산금 계산
+
+### Phase 5 — 운영
+- [ ] 모니터링 (메트릭 수집, 알림)
+- [ ] 웹훅 (PG → 가맹점 비동기 알림)
+- [ ] 인증/인가 (가맹점 API Key)
 
 
 ## 참고
