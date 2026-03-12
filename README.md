@@ -45,6 +45,22 @@ READY → APPROVED → CAPTURED
 FAILED  CANCELED   CANCELED / PARTIAL_CANCELED
 ```
 
+### 금액 위변조 검증
+
+approve 시 가맹점이 요청한 금액과 PG가 실제 승인한 금액을 비교한다. 불일치 시 자동으로 PG 취소 후 FAILED 처리하여 잘못된 금액의 결제가 확정되는 것을 방지한다.
+
+```
+가맹점 → approve(10000원) → PG 승인(9000원) → 금액 불일치 → PG 자동 취소 → FAILED
+```
+
+### 서비스 클래스 분리 (PaymentService / PaymentTransactionService)
+
+Spring의 `@Transactional`은 프록시 기반이라, 같은 클래스 내부에서 메서드를 호출하면 트랜잭션이 적용되지 않는다 (self-invocation 문제). 이를 해결하기 위해 분산 락 담당(`PaymentService`)과 트랜잭션 처리 담당(`PaymentTransactionService`)을 분리했다.
+
+```
+PaymentService (분산 락) → PaymentTransactionService (@Transactional)
+```
+
 ### 동시성 제어 (분산 락)
 
 같은 orderId로 동시에 요청이 들어올 때 중복 결제를 방지하기 위해 Redis 분산 락을 사용한다.
@@ -129,8 +145,8 @@ docker compose up -d
 - [x] Flyway 마이그레이션
 - [x] 동시성 제어 (Redis 분산 락)
 - [x] 결제 조회 API
-- [ ] 매입(CAPTURED) 처리
-- [ ] 금액 위변조 검증
+- [x] 매입(CAPTURED) 처리
+- [x] 금액 위변조 검증 (PG 승인 금액 불일치 시 자동 취소)
 
 ### Phase 2 — 내결함성
 - [ ] Circuit Breaker

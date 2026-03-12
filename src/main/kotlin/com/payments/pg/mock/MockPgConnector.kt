@@ -16,6 +16,7 @@ class MockPgConnector : PgConnector {
             success = true,
             pgTransactionId = "mock-${UUID.randomUUID()}",
             message = "승인 완료",
+            amount = amount,
         )
     }
 

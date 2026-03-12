@@ -13,4 +13,5 @@ data class PgResponse(
     val success: Boolean,
     val pgTransactionId: String?,
     val message: String?,
+    val amount: BigDecimal? = null,
 )

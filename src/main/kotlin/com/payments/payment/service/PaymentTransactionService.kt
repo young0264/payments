@@ -42,6 +42,19 @@ class PaymentTransactionService(
         val pgResponse = pgConnector.approve(orderId, amount)
 
         if (pgResponse.success) {
+            // 금액 위변조 검증: PG 승인 금액과 요청 금액 비교
+            if (pgResponse.amount != null && pgResponse.amount.compareTo(amount) != 0) {
+                pgResponse.pgTransactionId?.let { txId ->
+                    pgConnector.cancel(txId, pgResponse.amount)
+                }
+                payment.status = PaymentStatus.FAILED
+                payment.pgProvider = pgConnector.providerName
+                payment.pgTransactionId = pgResponse.pgTransactionId
+                payment.failReason = "금액 위변조 감지: 요청=${amount}, PG승인=${pgResponse.amount}"
+                payment.updatedAt = LocalDateTime.now()
+                return payment
+            }
+
             payment.status = PaymentStatus.APPROVED
             payment.pgProvider = pgConnector.providerName
             payment.pgTransactionId = pgResponse.pgTransactionId
