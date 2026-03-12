@@ -31,6 +31,7 @@ class GlobalExceptionHandler : ResponseEntityExceptionHandler() {
     ): ResponseEntity<Any>? {
         return ResponseEntity
             .status(status)
+            .headers(headers)
             .body(ErrorResponse("INTERNAL_ERROR", ex.message ?: "알 수 없는 오류가 발생했습니다"))
     }
 
