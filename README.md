@@ -101,6 +101,16 @@ POST /api/v1/payments/approve
 }
 ```
 
+### 결제 매입
+```
+POST /api/v1/payments/capture
+```
+```json
+{
+  "orderId": "order-001"
+}
+```
+
 ### 결제 취소
 ```
 POST /api/v1/payments/cancel
