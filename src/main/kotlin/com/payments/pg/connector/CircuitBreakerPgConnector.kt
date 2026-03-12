@@ -43,7 +43,7 @@ class CircuitBreakerPgConnector(
 
     private fun executeWithCircuitBreaker(operation: String, supplier: () -> PgResponse): PgResponse {
         return try {
-            circuitBreaker.executeSupplier(supplier)
+            circuitBreaker.executeSupplier { supplier() }
         } catch (e: CallNotPermittedException) {
             log.warn("Circuit breaker OPEN - {} 요청 차단됨: {}", operation, e.message)
             throw PaymentException(ErrorCode.PG_CIRCUIT_BREAKER_OPEN)
