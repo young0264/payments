@@ -27,11 +27,11 @@ class GlobalExceptionHandler : ResponseEntityExceptionHandler() {
         headers: HttpHeaders,
         status: HttpStatusCode,
         request: WebRequest,
-    ): ResponseEntity<Any>? {
+    ): ResponseEntity<Any> {
         val message = ex.bindingResult.fieldErrors
             .joinToString(", ") { "${it.field}: ${it.defaultMessage}" }
         return ResponseEntity
-            .status(400)
+            .status(status)
             .body(ErrorResponse("VALIDATION_ERROR", message))
     }
 
