@@ -9,4 +9,6 @@ enum class ErrorCode(val status: Int, val message: String) {
     PG_CANCEL_FAILED(502, "PG 취소에 실패했습니다"),
     IDEMPOTENCY_CONFLICT(409, "동일한 멱등성 키로 다른 요청이 처리 중입니다"),
     PG_CIRCUIT_BREAKER_OPEN(503, "PG 서비스가 일시적으로 불안정합니다. 잠시 후 다시 시도해 주세요"),
+    ALL_PG_UNAVAILABLE(503, "모든 PG가 이용 불가 상태입니다"),
+    PG_PROVIDER_NOT_FOUND(500, "지정된 PG 프로바이더를 찾을 수 없습니다"),
 }
