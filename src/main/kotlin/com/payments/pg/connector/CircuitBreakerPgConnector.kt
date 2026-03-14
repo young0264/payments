@@ -2,24 +2,17 @@ package com.payments.pg.connector
 
 import com.payments.common.exception.ErrorCode
 import com.payments.common.exception.PaymentException
-import com.payments.pg.mock.MockPgConnector
 import io.github.resilience4j.circuitbreaker.CallNotPermittedException
-import io.github.resilience4j.circuitbreaker.CircuitBreakerRegistry
+import io.github.resilience4j.circuitbreaker.CircuitBreaker
 import org.slf4j.LoggerFactory
-import org.springframework.context.annotation.Primary
-import org.springframework.stereotype.Component
 import java.math.BigDecimal
 
-// 데코레이터 패턴으로 서킷브레이커 적용
-@Component
-@Primary
 class CircuitBreakerPgConnector(
-    private val delegate: MockPgConnector,
-    circuitBreakerRegistry: CircuitBreakerRegistry,
+    private val delegate: PgConnector,
+    private val circuitBreaker: CircuitBreaker,
 ) : PgConnector {
 
     private val log = LoggerFactory.getLogger(javaClass)
-    private val circuitBreaker = circuitBreakerRegistry.circuitBreaker("pg-connector")
 
     override val providerName: String get() = delegate.providerName
 
