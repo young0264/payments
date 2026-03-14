@@ -175,6 +175,7 @@ docker compose up -d
 ### Phase 2 — 내결함성
 - [x] Circuit Breaker
 - [ ] PG 라우팅 (장애 시 다른 PG로 전환)
+- [ ] PG 프로바이더 DB 기반 관리 (우선순위/활성화 동적 변경)
 - [ ] 재시도 전략
 - [ ] 부분 취소
 
