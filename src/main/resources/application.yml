@@ -45,8 +45,8 @@ server:
 
 resilience4j:
   circuitbreaker:
-    instances:
-      pg-connector:
+    configs:
+      pg-default:
         sliding-window-type: COUNT_BASED
         sliding-window-size: 10
         minimum-number-of-calls: 5
@@ -57,3 +57,8 @@ resilience4j:
           - java.lang.RuntimeException
         ignore-exceptions:
           - com.payments.common.exception.PaymentException
+    instances:
+      pg-mock-a:
+        base-config: pg-default
+      pg-mock-b:
+        base-config: pg-default

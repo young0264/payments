@@ -38,3 +38,6 @@ out/
 
 ### Kotlin ###
 .kotlin
+
+### 구현 플랜 문서 ###
+PG_ROUTING_PLAN.md

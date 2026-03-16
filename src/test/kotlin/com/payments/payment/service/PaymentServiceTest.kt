@@ -24,7 +24,7 @@ class PaymentServiceTest {
         val payment = paymentService.approve("order-1", "key-1", BigDecimal(10000))
 
         assertThat(payment.status).isEqualTo(PaymentStatus.APPROVED)
-        assertThat(payment.pgProvider).isEqualTo("MOCK_PG")
+        assertThat(payment.pgProvider).isEqualTo("MOCK_PG_A")
         assertThat(payment.pgTransactionId).isNotNull()
     }
 
@@ -72,7 +72,7 @@ class PaymentServiceTest {
         val payment = paymentService.approve("order-6", "key-6", BigDecimal(15000))
 
         assertThat(payment.pgTransactionId).isNotNull()
-        assertThat(payment.pgTransactionId).startsWith("mock-")
+        assertThat(payment.pgTransactionId).startsWith("mock-a-")
     }
 
     @Test

@@ -5,7 +5,7 @@ import com.payments.common.exception.PaymentException
 import com.payments.payment.domain.Payment
 import com.payments.payment.domain.PaymentStatus
 import com.payments.payment.repository.PaymentRepository
-import com.payments.pg.connector.PgConnector
+import com.payments.pg.router.PgRouter
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.math.BigDecimal
@@ -14,7 +14,7 @@ import java.time.LocalDateTime
 @Service
 class PaymentTransactionService(
     private val paymentRepository: PaymentRepository,
-    private val pgConnector: PgConnector,
+    private val pgRouter: PgRouter,
 ) {
 
     @Transactional
@@ -38,17 +38,21 @@ class PaymentTransactionService(
             )
         )
 
-        // PG 승인 요청
-        val pgResponse = pgConnector.approve(orderId, amount)
+        // PG 승인 요청 (라우터가 fallback 처리)
+        val pgResponse = pgRouter.approve(orderId, amount)
 
         if (pgResponse.success) {
             // 금액 위변조 검증: PG 승인 금액과 요청 금액 비교
             if (pgResponse.amount != null && pgResponse.amount.compareTo(amount) != 0) {
                 pgResponse.pgTransactionId?.let { txId ->
-                    pgConnector.cancel(txId, pgResponse.amount)
+                    val providerName = requireNotNull(pgResponse.providerName) {
+                        "providerName is null for orderId=$orderId"
+                    }
+                    val connector = pgRouter.getConnector(providerName)
+                    connector.cancel(txId, pgResponse.amount)
                 }
                 payment.status = PaymentStatus.FAILED
-                payment.pgProvider = pgConnector.providerName
+                payment.pgProvider = pgResponse.providerName
                 payment.pgTransactionId = pgResponse.pgTransactionId
                 payment.failReason = "금액 위변조 감지: 요청=${amount}, PG승인=${pgResponse.amount}"
                 payment.updatedAt = LocalDateTime.now()
@@ -56,7 +60,7 @@ class PaymentTransactionService(
             }
 
             payment.status = PaymentStatus.APPROVED
-            payment.pgProvider = pgConnector.providerName
+            payment.pgProvider = pgResponse.providerName
             payment.pgTransactionId = pgResponse.pgTransactionId
         } else {
             payment.status = PaymentStatus.FAILED
@@ -80,7 +84,11 @@ class PaymentTransactionService(
             "pgTransactionId is null for orderId=${payment.orderId}"
         }
 
-        val pgResponse = pgConnector.capture(txId, payment.amount)
+        val providerName = requireNotNull(payment.pgProvider) {
+            "pgProvider is null for orderId=${payment.orderId}"
+        }
+        val connector = pgRouter.getConnector(providerName)
+        val pgResponse = connector.capture(txId, payment.amount)
 
         if (pgResponse.success) {
             payment.status = PaymentStatus.CAPTURED
@@ -105,7 +113,11 @@ class PaymentTransactionService(
             "pgTransactionId is null for orderId=${payment.orderId}"
         }
 
-        val pgResponse = pgConnector.cancel(txId, payment.amount)
+        val providerName = requireNotNull(payment.pgProvider) {
+            "pgProvider is null for orderId=${payment.orderId}"
+        }
+        val connector = pgRouter.getConnector(providerName)
+        val pgResponse = connector.cancel(txId, payment.amount)
 
         if (pgResponse.success) {
             payment.status = PaymentStatus.CANCELED

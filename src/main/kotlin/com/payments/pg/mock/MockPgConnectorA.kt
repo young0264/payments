@@ -6,15 +6,15 @@ import org.springframework.stereotype.Component
 import java.math.BigDecimal
 import java.util.*
 
-@Component
-class MockPgConnector : PgConnector {
+@Component("mockPgA")
+class MockPgConnectorA : PgConnector {
 
-    override val providerName: String = "MOCK_PG"
+    override val providerName: String = "MOCK_PG_A"
 
     override fun approve(orderId: String, amount: BigDecimal): PgResponse {
         return PgResponse(
             success = true,
-            pgTransactionId = "mock-${UUID.randomUUID()}",
+            pgTransactionId = "mock-a-${UUID.randomUUID()}",
             message = "승인 완료",
             amount = amount,
         )

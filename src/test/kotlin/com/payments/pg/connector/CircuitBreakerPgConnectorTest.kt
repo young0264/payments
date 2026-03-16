@@ -2,7 +2,6 @@ package com.payments.pg.connector
 
 import com.payments.common.exception.ErrorCode
 import com.payments.common.exception.PaymentException
-import com.payments.pg.mock.MockPgConnector
 import io.github.resilience4j.circuitbreaker.CircuitBreakerConfig
 import io.github.resilience4j.circuitbreaker.CircuitBreakerRegistry
 import org.junit.jupiter.api.Assertions.*
@@ -13,26 +12,27 @@ import java.math.BigDecimal
 
 class CircuitBreakerPgConnectorTest {
 
-    private lateinit var mockPgConnector: MockPgConnector
+    private lateinit var delegate: PgConnector
     private lateinit var sut: CircuitBreakerPgConnector
 
     @BeforeEach
     fun setUp() {
-        mockPgConnector = mock()
+        delegate = mock()
         val config = CircuitBreakerConfig.custom()
             .slidingWindowType(CircuitBreakerConfig.SlidingWindowType.COUNT_BASED)
             .slidingWindowSize(4)
             .minimumNumberOfCalls(2)
             .failureRateThreshold(50f)
             .build()
-        val registry = CircuitBreakerRegistry.of(config)
-        sut = CircuitBreakerPgConnector(mockPgConnector, registry)
+        val circuitBreaker = CircuitBreakerRegistry.of(config)
+            .circuitBreaker("test")
+        sut = CircuitBreakerPgConnector(delegate, circuitBreaker)
     }
 
     @Test
     fun `정상 호출 시 PG 응답 그대로 반환`() {
         val expected = PgResponse(true, "pg-123", "승인 완료", BigDecimal(1000))
-        whenever(mockPgConnector.approve(any(), any())).thenReturn(expected)
+        whenever(delegate.approve(any(), any())).thenReturn(expected)
 
         val result = sut.approve("order-1", BigDecimal(1000))
 
@@ -41,7 +41,7 @@ class CircuitBreakerPgConnectorTest {
 
     @Test
     fun `실패율 초과 시 서킷 OPEN - PG_CIRCUIT_BREAKER_OPEN 에러`() {
-        whenever(mockPgConnector.approve(any(), any()))
+        whenever(delegate.approve(any(), any()))
             .thenThrow(RuntimeException("PG 타임아웃"))
 
         // minimumNumberOfCalls(2) + failureRate(50%) → 2번 실패로 서킷 OPEN
@@ -61,16 +61,15 @@ class CircuitBreakerPgConnectorTest {
     @Test
     fun `PG 비즈니스 실패(success=false)는 서킷에 영향 없음`() {
         val failResponse = PgResponse(false, null, "잔액 부족")
-        whenever(mockPgConnector.approve(any(), any())).thenReturn(failResponse)
+        whenever(delegate.approve(any(), any())).thenReturn(failResponse)
 
         repeat(5) {
             val result = sut.approve("order-1", BigDecimal(1000))
             assertFalse(result.success)
         }
 
-        // 서킷이 열리지 않고 정상 호출 계속 가능
         val result = sut.approve("order-1", BigDecimal(1000))
         assertFalse(result.success)
-        verify(mockPgConnector, times(6)).approve(any(), any())
+        verify(delegate, times(6)).approve(any(), any())
     }
 }
