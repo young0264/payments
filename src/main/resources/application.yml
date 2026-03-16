@@ -62,3 +62,20 @@ resilience4j:
         base-config: pg-default
       pg-mock-b:
         base-config: pg-default
+
+  retry:
+    configs:
+      pg-default:
+        max-attempts: 3
+        wait-duration: 500ms
+        enable-exponential-backoff: true
+        exponential-backoff-multiplier: 2
+        retry-exceptions:
+          - java.lang.RuntimeException
+        ignore-exceptions:
+          - com.payments.common.exception.PaymentException
+    instances:
+      pg-mock-a:
+        base-config: pg-default
+      pg-mock-b:
+        base-config: pg-default
