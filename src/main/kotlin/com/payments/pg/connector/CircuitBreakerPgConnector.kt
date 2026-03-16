@@ -39,6 +39,7 @@ class CircuitBreakerPgConnector(
     private fun executeWithResilience(operation: String, supplier: () -> PgResponse): PgResponse {
         return try {
             circuitBreaker.executeSupplier {
+                // retry (decorateSupplier)
                 retry.executeSupplier { supplier() }
             }
         } catch (e: CallNotPermittedException) {
