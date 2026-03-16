@@ -44,12 +44,14 @@ class CircuitBreakerPgConnectorTest {
         whenever(delegate.approve(any(), any()))
             .thenThrow(RuntimeException("PG 타임아웃"))
 
+        // minimumNumberOfCalls(2) + failureRate(50%) → 2번 실패로 서킷 OPEN
         repeat(2) {
             assertThrows(RuntimeException::class.java) {
                 sut.approve("order-1", BigDecimal(1000))
             }
         }
 
+        // 서킷 OPEN 상태에서 호출 → PG_CIRCUIT_BREAKER_OPEN
         val ex = assertThrows(PaymentException::class.java) {
             sut.approve("order-1", BigDecimal(1000))
         }
