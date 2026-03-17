@@ -44,7 +44,11 @@ class PaymentController(
 
     @PostMapping("/cancel")
     fun cancel(@Valid @RequestBody request: CancelRequest): ResponseEntity<PaymentResponse> {
-        val payment = paymentService.cancel(orderId = request.orderId)
+        val payment = paymentService.cancel(
+            orderId = request.orderId,
+            cancelAmount = request.cancelAmount,
+            cancelReason = request.cancelReason,
+        )
         return ResponseEntity.ok(PaymentResponse.from(payment))
     }
 }
