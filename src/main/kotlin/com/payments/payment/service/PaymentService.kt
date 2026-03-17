@@ -27,9 +27,9 @@ class PaymentService(
         }
     }
 
-    fun cancel(orderId: String): Payment {
+    fun cancel(orderId: String, cancelAmount: BigDecimal? = null, cancelReason: String? = null): Payment {
         return distributedLock.withLock("payment:$orderId") {
-            paymentTransactionService.cancel(orderId)
+            paymentTransactionService.cancel(orderId, cancelAmount, cancelReason)
         }
     }
 
