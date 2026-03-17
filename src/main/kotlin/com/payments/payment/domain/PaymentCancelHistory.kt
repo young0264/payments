@@ -11,8 +11,9 @@ class PaymentCancelHistory(
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     val id: Long = 0L,
 
-    @Column(nullable = false)
-    val paymentId: Long,
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "payment_id", nullable = false)
+    val payment: Payment,
 
     @Column(nullable = false, precision = 15, scale = 2)
     val cancelAmount: BigDecimal,

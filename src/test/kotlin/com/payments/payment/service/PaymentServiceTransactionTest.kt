@@ -31,7 +31,7 @@ class PaymentServiceTransactionTest {
     @AfterEach
     fun tearDown() {
         paymentRepository.findByOrderId(orderId)?.let {
-            cancelHistoryRepository.deleteAllByPaymentId(it.id)
+            cancelHistoryRepository.deleteAllByPayment(it)
             paymentRepository.delete(it)
         }
     }

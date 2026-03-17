@@ -146,7 +146,7 @@ class PaymentTransactionService(
 
             cancelHistoryRepository.save(
                 PaymentCancelHistory(
-                    paymentId = payment.id,
+                    payment = payment,
                     cancelAmount = actualCancelAmount,
                     cancelReason = cancelReason,
                     canceledAmountBefore = canceledAmountBefore,
