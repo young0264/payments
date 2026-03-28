@@ -25,15 +25,33 @@
 
 ```
 payments/
-├── payment/
+├── payment/           # 결제 핵심
 │   ├── controller/    # REST API
 │   ├── service/       # 결제 승인/취소 로직
 │   ├── domain/        # Payment 엔티티, PaymentStatus 상태머신
 │   ├── dto/           # Request/Response DTO
 │   └── repository/    # JPA Repository
-├── pg/
+├── pg/                # PG 연동
 │   ├── connector/     # PG 커넥터 인터페이스 (추상화)
+│   ├── router/        # PG 라우팅 (장애 시 fallback)
 │   └── mock/          # 테스트용 Mock PG
+├── stock/             # 재고 동시성 제어 (보강)
+│   ├── controller/    # 락 전략별 주문 API
+│   ├── service/       # 비관적/낙관적/분산 락/원자적 UPDATE
+│   ├── domain/        # Product, StockOrder 엔티티
+│   ├── dto/           # Request/Response DTO
+│   └── repository/    # SELECT FOR UPDATE, 원자적 UPDATE 쿼리
+├── shipping/          # 배송 API 연동 + 장애 격리 (보강)
+│   ├── connector/     # ShippingConnector 인터페이스 + CircuitBreaker 데코레이터
+│   ├── router/        # 배송사 라우팅 (fallback)
+│   ├── mock/          # Mock 배송사 A, B
+│   ├── config/        # 서킷브레이커/리트라이 설정
+│   ├── service/       # 동기 생성 + 비동기 처리 + Saga 보상
+│   ├── domain/        # ShippingRequest 엔티티, ShippingStatus 상태머신
+│   └── repository/    # JPA Repository
+├── queue/             # 이벤트 대기열 (보강)
+│   ├── service/       # Redis Sorted Set 대기열 + 토큰 발급
+│   └── controller/    # 대기열 진입/순번/입장 API
 └── common/
     └── exception/     # ErrorCode, 예외 처리
 ```
@@ -237,6 +255,29 @@ docker compose up -d
 - [ ] 인증/인가 (가맹점 API Key)
 - [ ] 테스트는 Testcontainers로 변경
 
+
+## 면접 약점 보강 문제
+
+윈들리 코딩테스트 리뷰에서 드러난 약점을 보강하기 위한 실습 문제.
+각 문제는 `problems/` 마크다운 + 실제 코드 구현으로 구성.
+
+| # | 주제 | 파일 | 약점 매핑 |
+|---|------|------|-----------|
+| 01 | 한정 수량 동시성 제어 | [01-limited-stock-concurrency.md](problems/01-limited-stock-concurrency.md) | 비관적/낙관적 락 트레이드오프, 고객당 제한 동시성 보장 |
+| 02 | 외부 배송 API + 장애 격리 | [02-shipping-api-resilience.md](problems/02-shipping-api-resilience.md) | 동기/비동기 분리, Saga 보상, CORS 오답 교정 |
+| 03 | 이벤트 트래픽 대기열 | [03-event-traffic-queue.md](problems/03-event-traffic-queue.md) | 시나리오 특화 확장성, Redis 앞단 트래픽 제어 |
+
+### 피드백 약점 → 코드 매핑
+
+| 약점 | 코드 위치 | 핵심 |
+|------|-----------|------|
+| 락 전략 깊이 부족 | `stock/service/StockOrderTransactionService.kt` | 비관적/낙관적/원자적 UPDATE 3가지 구현 비교 |
+| 고객당 제한 동시성 보장 부재 | `stock/repository/StockOrderRepository.kt` | SUM + FOR UPDATE 트랜잭션 내 검증 |
+| CORS 오답 | `problems/02-shipping-api-resilience.md` | 서버-서버 통신에서 CORS 무관 명시 |
+| 동기/비동기 분리 미언급 | `shipping/service/ShippingService.kt` | createShippingRequest(동기) vs processShipping(비동기) |
+| Saga 보상 트랜잭션 부재 | `shipping/service/ShippingService.kt` | 배송 실패 시 SHIPPING_FAILED 보상 |
+| 배송사 fallback 불명확 | `shipping/router/ShippingRouter.kt` | PgRouter와 동일 패턴 적용 |
+| 시나리오 특화 확장성 부족 | `queue/service/EventQueueService.kt` | Redis Sorted Set 대기열 + 토큰 발급 |
 
 ## 참고
 
