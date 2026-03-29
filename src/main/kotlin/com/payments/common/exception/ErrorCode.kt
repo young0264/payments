@@ -11,4 +11,6 @@ enum class ErrorCode(val status: Int, val message: String) {
     PG_CIRCUIT_BREAKER_OPEN(503, "PG 서비스가 일시적으로 불안정합니다. 잠시 후 다시 시도해 주세요"),
     ALL_PG_UNAVAILABLE(503, "모든 PG가 이용 불가 상태입니다"),
     PG_PROVIDER_NOT_FOUND(500, "지정된 PG 프로바이더를 찾을 수 없습니다"),
+    CANCEL_AMOUNT_EXCEEDS_CANCELABLE(400, "취소 금액이 취소 가능 잔액을 초과합니다"),
+    CANCEL_AMOUNT_NOT_POSITIVE(400, "취소 금액은 0보다 커야 합니다"),
 }

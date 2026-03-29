@@ -4,11 +4,14 @@ import com.payments.common.exception.ErrorCode
 import com.payments.common.exception.PaymentException
 import io.github.resilience4j.circuitbreaker.CircuitBreakerConfig
 import io.github.resilience4j.circuitbreaker.CircuitBreakerRegistry
+import io.github.resilience4j.retry.RetryConfig
+import io.github.resilience4j.retry.RetryRegistry
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.*
 import java.math.BigDecimal
+import java.time.Duration
 
 class CircuitBreakerPgConnectorTest {
 
@@ -18,15 +21,26 @@ class CircuitBreakerPgConnectorTest {
     @BeforeEach
     fun setUp() {
         delegate = mock()
-        val config = CircuitBreakerConfig.custom()
+
+        val cbConfig = CircuitBreakerConfig.custom()
             .slidingWindowType(CircuitBreakerConfig.SlidingWindowType.COUNT_BASED)
             .slidingWindowSize(4)
             .minimumNumberOfCalls(2)
             .failureRateThreshold(50f)
             .build()
-        val circuitBreaker = CircuitBreakerRegistry.of(config)
+        val circuitBreaker = CircuitBreakerRegistry.of(cbConfig)
             .circuitBreaker("test")
-        sut = CircuitBreakerPgConnector(delegate, circuitBreaker)
+
+        val retryConfig = RetryConfig.custom<PgResponse>()
+            .maxAttempts(3)
+            .waitDuration(Duration.ofMillis(10))
+            .retryExceptions(RuntimeException::class.java)
+            .ignoreExceptions(PaymentException::class.java)
+            .build()
+        val retry = RetryRegistry.of(retryConfig)
+            .retry("test")
+
+        sut = CircuitBreakerPgConnector(delegate, circuitBreaker, retry)
     }
 
     @Test
@@ -37,6 +51,7 @@ class CircuitBreakerPgConnectorTest {
         val result = sut.approve("order-1", BigDecimal(1000))
 
         assertEquals(expected, result)
+        verify(delegate, times(1)).approve(any(), any())
     }
 
     @Test
@@ -44,7 +59,8 @@ class CircuitBreakerPgConnectorTest {
         whenever(delegate.approve(any(), any()))
             .thenThrow(RuntimeException("PG 타임아웃"))
 
-        // minimumNumberOfCalls(2) + failureRate(50%) → 2번 실패로 서킷 OPEN
+        // minimumNumberOfCalls(2) + failureRate(50%)
+        // 재시도 3회 × 2번 = delegate 6번 호출, 서킷에 실패 2건 기록 → OPEN
         repeat(2) {
             assertThrows(RuntimeException::class.java) {
                 sut.approve("order-1", BigDecimal(1000))
@@ -71,5 +87,41 @@ class CircuitBreakerPgConnectorTest {
         val result = sut.approve("order-1", BigDecimal(1000))
         assertFalse(result.success)
         verify(delegate, times(6)).approve(any(), any())
+    }
+
+    @Test
+    fun `재시도 후 성공하면 최종 성공 반환`() {
+        val success = PgResponse(true, "pg-123", "승인 완료", BigDecimal(1000))
+        whenever(delegate.approve(any(), any()))
+            .thenThrow(RuntimeException("일시적 오류"))
+            .thenThrow(RuntimeException("일시적 오류"))
+            .thenReturn(success)
+
+        val result = sut.approve("order-1", BigDecimal(1000))
+
+        assertEquals(success, result)
+        verify(delegate, times(3)).approve(any(), any())
+    }
+
+    @Test
+    fun `재시도 3회 모두 실패하면 예외 전파`() {
+        whenever(delegate.approve(any(), any()))
+            .thenThrow(RuntimeException("PG 타임아웃"))
+
+        assertThrows(RuntimeException::class.java) {
+            sut.approve("order-1", BigDecimal(1000))
+        }
+        verify(delegate, times(3)).approve(any(), any())
+    }
+
+    @Test
+    fun `PaymentException은 재시도하지 않음`() {
+        whenever(delegate.approve(any(), any()))
+            .thenThrow(PaymentException(ErrorCode.PG_APPROVE_FAILED))
+
+        assertThrows(PaymentException::class.java) {
+            sut.approve("order-1", BigDecimal(1000))
+        }
+        verify(delegate, times(1)).approve(any(), any())
     }
 }

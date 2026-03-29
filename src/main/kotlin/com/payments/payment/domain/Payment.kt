@@ -20,6 +20,9 @@ class Payment(
     @Column(nullable = false, precision = 15, scale = 2)
     val amount: BigDecimal,
 
+    @Column(nullable = false, precision = 15, scale = 2)
+    var canceledAmount: BigDecimal = BigDecimal.ZERO,
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
     var status: PaymentStatus = PaymentStatus.READY,
@@ -36,4 +39,7 @@ class Payment(
     val createdAt: LocalDateTime = LocalDateTime.now(),
 
     var updatedAt: LocalDateTime = LocalDateTime.now(),
-)
+) {
+    val cancelableAmount: BigDecimal
+        get() = amount - canceledAmount
+}

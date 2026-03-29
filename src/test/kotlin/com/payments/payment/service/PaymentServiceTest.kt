@@ -135,4 +135,78 @@ class PaymentServiceTest {
         assertThat(canceled.status).isEqualTo(PaymentStatus.CANCELED)
         assertThat(canceled.pgTransactionId).isEqualTo(pgTxId)
     }
+
+    @Test
+    fun `부분 취소 성공 - 10000원 중 3000원`() {
+        paymentService.approve("order-pc-1", "key-pc-1", BigDecimal(10000))
+        val canceled = paymentService.cancel("order-pc-1", BigDecimal(3000))
+
+        assertThat(canceled.status).isEqualTo(PaymentStatus.PARTIAL_CANCELED)
+        assertThat(canceled.canceledAmount).isEqualByComparingTo(BigDecimal(3000))
+        assertThat(canceled.cancelableAmount).isEqualByComparingTo(BigDecimal(7000))
+    }
+
+    @Test
+    fun `연속 부분 취소 - PARTIAL_CANCELED에서 추가 취소`() {
+        paymentService.approve("order-pc-2", "key-pc-2", BigDecimal(10000))
+        paymentService.cancel("order-pc-2", BigDecimal(3000))
+        val canceled = paymentService.cancel("order-pc-2", BigDecimal(2000))
+
+        assertThat(canceled.status).isEqualTo(PaymentStatus.PARTIAL_CANCELED)
+        assertThat(canceled.canceledAmount).isEqualByComparingTo(BigDecimal(5000))
+        assertThat(canceled.cancelableAmount).isEqualByComparingTo(BigDecimal(5000))
+    }
+
+    @Test
+    fun `잔액 전부 취소 시 CANCELED`() {
+        paymentService.approve("order-pc-3", "key-pc-3", BigDecimal(10000))
+        paymentService.cancel("order-pc-3", BigDecimal(7000))
+        val canceled = paymentService.cancel("order-pc-3", BigDecimal(3000))
+
+        assertThat(canceled.status).isEqualTo(PaymentStatus.CANCELED)
+        assertThat(canceled.cancelableAmount).isEqualByComparingTo(BigDecimal.ZERO)
+    }
+
+    @Test
+    fun `취소 금액 초과 시 에러`() {
+        paymentService.approve("order-pc-4", "key-pc-4", BigDecimal(10000))
+
+        assertThrows<PaymentException> {
+            paymentService.cancel("order-pc-4", BigDecimal(15000))
+        }.also {
+            assertThat(it.errorCode).isEqualTo(ErrorCode.CANCEL_AMOUNT_EXCEEDS_CANCELABLE)
+        }
+    }
+
+    @Test
+    fun `cancelAmount null이면 전체 취소`() {
+        paymentService.approve("order-pc-5", "key-pc-5", BigDecimal(10000))
+        val canceled = paymentService.cancel("order-pc-5")
+
+        assertThat(canceled.status).isEqualTo(PaymentStatus.CANCELED)
+        assertThat(canceled.canceledAmount).isEqualByComparingTo(BigDecimal(10000))
+    }
+
+    @Test
+    fun `부분 취소 후 cancelAmount null이면 잔액 전체 취소`() {
+        paymentService.approve("order-pc-6", "key-pc-6", BigDecimal(10000))
+        paymentService.cancel("order-pc-6", BigDecimal(3000))
+        val canceled = paymentService.cancel("order-pc-6")
+
+        assertThat(canceled.status).isEqualTo(PaymentStatus.CANCELED)
+        assertThat(canceled.canceledAmount).isEqualByComparingTo(BigDecimal(10000))
+    }
+
+    @Test
+    fun `CANCELED 상태에서 추가 취소 불가`() {
+        paymentService.approve("order-pc-7", "key-pc-7", BigDecimal(10000))
+        paymentService.cancel("order-pc-7")
+
+        assertThrows<PaymentException> {
+            paymentService.cancel("order-pc-7", BigDecimal(1000))
+        }.also {
+            assertThat(it.errorCode).isEqualTo(ErrorCode.INVALID_PAYMENT_STATUS)
+        }
+    }
+
 }

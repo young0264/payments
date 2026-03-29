@@ -1,6 +1,7 @@
 package com.payments.payment.service
 
 import com.payments.payment.domain.PaymentStatus
+import com.payments.payment.repository.PaymentCancelHistoryRepository
 import com.payments.payment.repository.PaymentRepository
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
@@ -16,6 +17,7 @@ class PaymentServiceTransactionTest {
 
     @Autowired lateinit var paymentService: PaymentService
     @Autowired lateinit var paymentRepository: PaymentRepository
+    @Autowired lateinit var cancelHistoryRepository: PaymentCancelHistoryRepository
 
     private lateinit var orderId: String
     private lateinit var idempotencyKey: String
@@ -29,6 +31,7 @@ class PaymentServiceTransactionTest {
     @AfterEach
     fun tearDown() {
         paymentRepository.findByOrderId(orderId)?.let {
+            cancelHistoryRepository.deleteAllByPayment(it)
             paymentRepository.delete(it)
         }
     }

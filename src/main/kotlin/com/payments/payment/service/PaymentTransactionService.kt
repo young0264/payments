@@ -3,7 +3,9 @@ package com.payments.payment.service
 import com.payments.common.exception.ErrorCode
 import com.payments.common.exception.PaymentException
 import com.payments.payment.domain.Payment
+import com.payments.payment.domain.PaymentCancelHistory
 import com.payments.payment.domain.PaymentStatus
+import com.payments.payment.repository.PaymentCancelHistoryRepository
 import com.payments.payment.repository.PaymentRepository
 import com.payments.pg.router.PgRouter
 import org.springframework.stereotype.Service
@@ -14,6 +16,7 @@ import java.time.LocalDateTime
 @Service
 class PaymentTransactionService(
     private val paymentRepository: PaymentRepository,
+    private val cancelHistoryRepository: PaymentCancelHistoryRepository,
     private val pgRouter: PgRouter,
 ) {
 
@@ -101,12 +104,24 @@ class PaymentTransactionService(
     }
 
     @Transactional
-    fun cancel(orderId: String): Payment {
+    fun cancel(orderId: String, cancelAmount: BigDecimal? = null, cancelReason: String? = null): Payment {
         val payment = paymentRepository.findByOrderId(orderId)
             ?: throw PaymentException(ErrorCode.PAYMENT_NOT_FOUND)
 
-        if (payment.status != PaymentStatus.APPROVED && payment.status != PaymentStatus.CAPTURED) {
+        if (payment.status != PaymentStatus.APPROVED &&
+            payment.status != PaymentStatus.CAPTURED &&
+            payment.status != PaymentStatus.PARTIAL_CANCELED) {
             throw PaymentException(ErrorCode.INVALID_PAYMENT_STATUS)
+        }
+
+        // 취소 금액 결정: null이면 잔액 전체 취소
+        val actualCancelAmount = cancelAmount ?: payment.cancelableAmount
+
+        if (actualCancelAmount.compareTo(BigDecimal.ZERO) <= 0) {
+            throw PaymentException(ErrorCode.CANCEL_AMOUNT_NOT_POSITIVE)
+        }
+        if (actualCancelAmount.compareTo(payment.cancelableAmount) > 0) {
+            throw PaymentException(ErrorCode.CANCEL_AMOUNT_EXCEEDS_CANCELABLE)
         }
 
         val txId = requireNotNull(payment.pgTransactionId) {
@@ -117,10 +132,28 @@ class PaymentTransactionService(
             "pgProvider is null for orderId=${payment.orderId}"
         }
         val connector = pgRouter.getConnector(providerName)
-        val pgResponse = connector.cancel(txId, payment.amount)
+        val pgResponse = connector.cancel(txId, actualCancelAmount)
 
         if (pgResponse.success) {
-            payment.status = PaymentStatus.CANCELED
+            val canceledAmountBefore = payment.canceledAmount
+            payment.canceledAmount = payment.canceledAmount + actualCancelAmount
+
+            payment.status = if (payment.cancelableAmount.compareTo(BigDecimal.ZERO) == 0) {
+                PaymentStatus.CANCELED
+            } else {
+                PaymentStatus.PARTIAL_CANCELED
+            }
+
+            cancelHistoryRepository.save(
+                PaymentCancelHistory(
+                    payment = payment,
+                    cancelAmount = actualCancelAmount,
+                    cancelReason = cancelReason,
+                    canceledAmountBefore = canceledAmountBefore,
+                    canceledAmountAfter = payment.canceledAmount,
+                    pgCancelTransactionId = pgResponse.pgTransactionId,
+                )
+            )
         } else {
             throw PaymentException(ErrorCode.PG_CANCEL_FAILED)
         }
