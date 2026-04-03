@@ -205,9 +205,9 @@ docker compose up -d
 
 ### Phase 2 — 내결함성
 - [x] Circuit Breaker
-- [ ] PG 라우팅 (장애 시 다른 PG로 전환)
-- [ ] 재시도 전략
-- [ ] 부분 취소
+- [x] PG 라우팅 (장애 시 다른 PG로 전환)
+- [x] 재시도 전략
+- [x] 부분 취소
 
 ### Phase 3 — 원장/대사
 - [ ] 복식부기 원장
