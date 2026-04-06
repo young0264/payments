@@ -78,6 +78,10 @@ class PaymentTransactionService(
         val payment = paymentRepository.findByOrderId(orderId)
             ?: throw PaymentException(ErrorCode.PAYMENT_NOT_FOUND)
 
+        if (payment.status != PaymentStatus.APPROVED) {
+            throw PaymentException(ErrorCode.INVALID_PAYMENT_STATUS)
+        }
+
         val txId = requireNotNull(payment.pgTransactionId) {
             "pgTransactionId is null for orderId=${payment.orderId}"
         }
@@ -101,6 +105,10 @@ class PaymentTransactionService(
     fun cancel(orderId: String, cancelAmount: BigDecimal? = null, cancelReason: String? = null): Payment {
         val payment = paymentRepository.findByOrderId(orderId)
             ?: throw PaymentException(ErrorCode.PAYMENT_NOT_FOUND)
+
+        if (payment.status !in listOf(PaymentStatus.APPROVED, PaymentStatus.CAPTURED, PaymentStatus.PARTIAL_CANCELED)) {
+            throw PaymentException(ErrorCode.INVALID_PAYMENT_STATUS)
+        }
 
         val actualCancelAmount = cancelAmount ?: payment.cancelableAmount
 
