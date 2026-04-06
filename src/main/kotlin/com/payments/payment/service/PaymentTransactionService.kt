@@ -154,4 +154,9 @@ class PaymentTransactionService(
 
         return payment
     }
+
+    @Transactional
+    fun deleteAllByPaymentId(paymentId: Long) {
+        ledgerRepository.deleteAllByPaymentId(paymentId)
+    }
 }
