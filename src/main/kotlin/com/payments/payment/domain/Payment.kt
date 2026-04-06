@@ -1,9 +1,10 @@
 package com.payments.payment.domain
 
+import com.payments.common.exception.ErrorCode
+import com.payments.common.exception.PaymentException
 import jakarta.persistence.*
 import java.math.BigDecimal
 import java.time.LocalDateTime
-
 @Entity
 @Table(name = "payment")
 class Payment(
@@ -44,7 +45,8 @@ class Payment(
         get() = amount - canceledAmount
 
     fun approve(pgTransactionId: String, pgProvider: String) {
-        check(status == PaymentStatus.READY) { "승인 가능한 상태가 아님: $status" }
+        if (status != PaymentStatus.READY)
+            throw PaymentException(ErrorCode.INVALID_PAYMENT_STATUS)
         this.status = PaymentStatus.APPROVED
         this.pgTransactionId = pgTransactionId
         this.pgProvider = pgProvider
@@ -52,19 +54,15 @@ class Payment(
     }
 
     fun capture() {
-        check(status == PaymentStatus.APPROVED) { "매입 가능한 상태가 아님: $status" }
+        if (status != PaymentStatus.APPROVED)
+            throw PaymentException(ErrorCode.INVALID_PAYMENT_STATUS)
         this.status = PaymentStatus.CAPTURED
         this.updatedAt = LocalDateTime.now()
     }
 
     fun cancel(cancelAmount: BigDecimal) {
-        check(
-            status in listOf(
-                PaymentStatus.APPROVED,
-                PaymentStatus.CAPTURED,
-                PaymentStatus.PARTIAL_CANCELED,
-            )
-        ) { "취소 가능한 상태가 아님: $status" }
+        if (status !in listOf(PaymentStatus.APPROVED, PaymentStatus.CAPTURED, PaymentStatus.PARTIAL_CANCELED))
+            throw PaymentException(ErrorCode.INVALID_PAYMENT_STATUS)
         this.canceledAmount += cancelAmount
         this.status = if (cancelableAmount.compareTo(BigDecimal.ZERO) == 0) {
             PaymentStatus.CANCELED
