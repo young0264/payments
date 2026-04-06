@@ -42,4 +42,43 @@ class Payment(
 ) {
     val cancelableAmount: BigDecimal
         get() = amount - canceledAmount
+
+    fun approve(pgTransactionId: String, pgProvider: String) {
+        check(status == PaymentStatus.READY) { "승인 가능한 상태가 아님: $status" }
+        this.status = PaymentStatus.APPROVED
+        this.pgTransactionId = pgTransactionId
+        this.pgProvider = pgProvider
+        this.updatedAt = LocalDateTime.now()
+    }
+
+    fun capture() {
+        check(status == PaymentStatus.APPROVED) { "매입 가능한 상태가 아님: $status" }
+        this.status = PaymentStatus.CAPTURED
+        this.updatedAt = LocalDateTime.now()
+    }
+
+    fun cancel(cancelAmount: BigDecimal) {
+        check(
+            status in listOf(
+                PaymentStatus.APPROVED,
+                PaymentStatus.CAPTURED,
+                PaymentStatus.PARTIAL_CANCELED,
+            )
+        ) { "취소 가능한 상태가 아님: $status" }
+        this.canceledAmount += cancelAmount
+        this.status = if (cancelableAmount.compareTo(BigDecimal.ZERO) == 0) {
+            PaymentStatus.CANCELED
+        } else {
+            PaymentStatus.PARTIAL_CANCELED
+        }
+        this.updatedAt = LocalDateTime.now()
+    }
+
+    fun fail(reason: String, pgTransactionId: String? = null, pgProvider: String? = null) {
+        this.status = PaymentStatus.FAILED
+        this.failReason = reason
+        this.pgTransactionId = pgTransactionId
+        this.pgProvider = pgProvider
+        this.updatedAt = LocalDateTime.now()
+    }
 }
