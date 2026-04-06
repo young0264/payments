@@ -210,7 +210,7 @@ docker compose up -d
 - [x] 부분 취소
 
 ### Phase 3 — 원장/대사
-- [ ] 복식부기 원장
+- [x] 복식부기 원장
 - [ ] 대사 (Reconciliation)
 
 ### Phase 4 — 정산/빌링
