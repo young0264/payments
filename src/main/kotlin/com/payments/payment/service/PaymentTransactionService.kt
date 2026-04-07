@@ -21,6 +21,7 @@ class PaymentTransactionService(
     private val cancelHistoryRepository: PaymentCancelHistoryRepository,
     private val ledgerRepository: LedgerRepository,
     private val pgRouter: PgRouter,
+    private val eventPublisher: PaymentEventPublisher,
 ) {
 
     @Transactional
@@ -94,6 +95,7 @@ class PaymentTransactionService(
         if (pgResponse.success) {
             payment.capture()
             ledgerRepository.save(Ledger.captured(payment))
+            eventPublisher.publishCaptured(payment.orderId, payment.amount)
         } else {
             throw PaymentException(ErrorCode.PG_CAPTURE_FAILED)
         }
