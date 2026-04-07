@@ -32,6 +32,7 @@ dependencies {
 	implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.6")
 	implementation("io.github.resilience4j:resilience4j-spring-boot3:2.2.0")
 	implementation("org.springframework.boot:spring-boot-starter-aop")
+	implementation("org.springframework.kafka:spring-kafka")
 	runtimeOnly("com.mysql:mysql-connector-j")
 	testImplementation("org.springframework.boot:spring-boot-starter-test")
 	testImplementation("org.mockito.kotlin:mockito-kotlin:5.4.0")
