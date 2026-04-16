@@ -13,4 +13,7 @@ data class ApproveRequest(
 
     @field:Positive
     val amount: BigDecimal,
+
+    @field:Positive
+    val merchantId: Long,
 )

@@ -21,6 +21,9 @@ class Payment(
     @Column(nullable = false, precision = 15, scale = 2)
     val amount: BigDecimal,
 
+    @Column(nullable = false)
+    val merchantId: Long,
+
     @Column(nullable = false, precision = 15, scale = 2)
     var canceledAmount: BigDecimal = BigDecimal.ZERO,
 
