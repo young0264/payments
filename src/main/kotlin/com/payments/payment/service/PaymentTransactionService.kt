@@ -7,6 +7,7 @@ import com.payments.payment.domain.LedgerEvent
 import com.payments.payment.domain.Payment
 import com.payments.payment.domain.PaymentCancelHistory
 import com.payments.payment.domain.PaymentStatus
+import com.payments.payment.dto.PaymentCapturedEvent
 import com.payments.payment.repository.LedgerRepository
 import com.payments.payment.repository.PaymentCancelHistoryRepository
 import com.payments.payment.repository.PaymentRepository
@@ -96,7 +97,14 @@ class PaymentTransactionService(
         if (pgResponse.success) {
             payment.capture()
             ledgerRepository.save(Ledger.captured(payment))
-            eventPublisher.publishCaptured(payment.orderId, payment.amount)
+            eventPublisher.publishCaptured(
+                PaymentCapturedEvent(
+                    orderId = payment.orderId,
+                    merchantId = payment.merchantId,
+                    amount = payment.amount,
+                    pgProvider = providerName,
+                )
+            )
         } else {
             throw PaymentException(ErrorCode.PG_CAPTURE_FAILED)
         }
