@@ -25,7 +25,7 @@ class PaymentTransactionService(
 ) {
 
     @Transactional
-    fun approve(orderId: String, idempotencyKey: String, amount: BigDecimal): Payment {
+    fun approve(orderId: String, idempotencyKey: String, amount: BigDecimal, merchantId: Long): Payment {
         paymentRepository.findByIdempotencyKey(idempotencyKey)?.let { return it }
 
         paymentRepository.findByOrderId(orderId)?.let { existing ->
@@ -39,6 +39,7 @@ class PaymentTransactionService(
                 orderId = orderId,
                 idempotencyKey = idempotencyKey,
                 amount = amount,
+                merchantId = merchantId,
             )
         )
 

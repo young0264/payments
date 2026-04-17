@@ -42,7 +42,7 @@ class PaymentServiceTransactionTest {
 
     @Test
     fun `approve 후 DB에 APPROVED 상태가 커밋되는지 확인`() {
-        paymentService.approve(orderId, idempotencyKey, BigDecimal(10000))
+        paymentService.approve(orderId, idempotencyKey, BigDecimal(10000), merchantId = 1L)
 
         val fromDb = paymentRepository.findByOrderId(orderId)!!
 
@@ -51,7 +51,7 @@ class PaymentServiceTransactionTest {
 
     @Test
     fun `approve 후 capture 호출 시 CAPTURED 상태가 DB에 커밋되는지 확인`() {
-        paymentService.approve(orderId, idempotencyKey, BigDecimal(5000))
+        paymentService.approve(orderId, idempotencyKey, BigDecimal(5000), merchantId = 1L)
         paymentService.capture(orderId)
 
         val fromDb = paymentRepository.findByOrderId(orderId)!!
@@ -61,7 +61,7 @@ class PaymentServiceTransactionTest {
 
     @Test
     fun `approve 후 cancel 호출 시 CANCELED 상태가 DB에 커밋되는지 확인`() {
-        paymentService.approve(orderId, idempotencyKey, BigDecimal(3000))
+        paymentService.approve(orderId, idempotencyKey, BigDecimal(3000), merchantId = 1L)
         paymentService.cancel(orderId)
 
         val fromDb = paymentRepository.findByOrderId(orderId)!!

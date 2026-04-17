@@ -15,9 +15,9 @@ class PaymentService(
     private val distributedLock: DistributedLock,
 ) {
 
-    fun approve(orderId: String, idempotencyKey: String, amount: BigDecimal): Payment {
+    fun approve(orderId: String, idempotencyKey: String, amount: BigDecimal, merchantId: Long): Payment {
         return distributedLock.withLock("payment:$orderId") {
-            paymentTransactionService.approve(orderId, idempotencyKey, amount)
+            paymentTransactionService.approve(orderId, idempotencyKey, amount, merchantId)
         }
     }
 

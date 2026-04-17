@@ -26,6 +26,7 @@ class PaymentController(
             orderId = request.orderId,
             idempotencyKey = request.idempotencyKey,
             amount = request.amount,
+            merchantId = request.merchantId,
         )
         return ResponseEntity.ok(PaymentResponse.from(payment))
     }
