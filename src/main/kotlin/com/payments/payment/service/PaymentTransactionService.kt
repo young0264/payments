@@ -25,6 +25,7 @@ class PaymentTransactionService(
     private val eventPublisher: PaymentEventPublisher,
 ) {
 
+    // pg사 카드 승인(카드 한도 차감, 돈은 아직 안넘어옴)
     @Transactional
     fun approve(orderId: String, idempotencyKey: String, amount: BigDecimal, merchantId: Long): Payment {
         paymentRepository.findByIdempotencyKey(idempotencyKey)?.let { return it }
@@ -76,6 +77,7 @@ class PaymentTransactionService(
         return payment
     }
 
+    // 실제로 돈을 청구 확정(가맹정 계좌로 돈이 넘어오는 트기러)
     @Transactional
     fun capture(orderId: String): Payment {
         val payment = paymentRepository.findByOrderId(orderId)
