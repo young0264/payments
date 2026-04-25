@@ -75,6 +75,91 @@ PaymentService (분산 락) → PaymentTransactionService (@Transactional)
 - **SETNX**: Redis의 원자적 연산. 키가 없을 때만 값을 설정하므로 동시 요청 중 하나만 성공한다.
 - **TTL**: 락에 만료 시간을 설정하여 서버 장애 시 락이 영원히 안 풀리는 것을 방지한다.
 
+### Redis 운영 시 주의사항
+
+#### 메모리 정책 (maxmemory-policy)
+
+Redis 메모리가 가득 차면 `maxmemory-policy` 설정에 따라 동작이 달라진다.
+
+| 정책 | 동작 |
+|------|------|
+| `noeviction` | 쓰기 요청 거부 (기본값) |
+| `allkeys-lru` | 전체 키 중 LRU로 제거 |
+| `volatile-lru` | TTL 있는 키 중 LRU로 제거 |
+| `allkeys-lfu` | 전체 키 중 사용 빈도 낮은 것 제거 |
+| `volatile-ttl` | TTL 짧은 것부터 제거 |
+
+**분산 락 관점에서 주의할 점**: 락 키는 TTL이 있으므로 `volatile-lru` 정책에서는 메모리 부족 시 락 키가 강제 제거될 수 있다. 락이 풀린 것처럼 동작해 중복 결제 위험이 생긴다.
+→ 락 용도 Redis는 `noeviction` 정책 + 메모리 사용량 알림 설정이 안전하다.
+
+#### 캐시 Redis와 락 Redis 분리
+
+캐시와 락을 같은 Redis 인스턴스에서 운영하면 캐시 데이터가 메모리를 가득 채워 락 키가 영향받을 수 있다. 운영 환경에서는 용도별로 Redis 인스턴스를 분리하는 것이 모범 사례다.
+
+#### 락 해제의 원자성
+
+현재 구현은 `GET` → `DELETE` 두 단계로 락을 해제한다. 두 연산 사이에 TTL이 만료되고 다른 서버가 락을 획득하면 엉뚱한 락을 해제하는 문제가 생길 수 있다. Lua 스크립트로 원자적으로 처리해야 한다.
+
+```lua
+if redis.call("get", KEYS[1]) == ARGV[1] then
+    return redis.call("del", KEYS[1])
+end
+```
+
+#### 고가용성
+
+Redis 단일 장애점 → Sentinel(자동 failover) 또는 Cluster 구성 필요. Sentinel failover 과정에서 락이 유실될 수 있으므로 DB 레벨의 안전장치(unique 제약)와 함께 사용해야 한다.
+
+#### TTL 설정과 Watchdog
+
+락 TTL이 너무 짧으면 작업 완료 전에 락이 만료되어 다른 서버가 락을 획득할 수 있다. 반대로 너무 길면 장애 시 락이 오래 유지된다.
+
+- **고정 TTL 방식**: 현재 구현. 작업 시간이 TTL을 초과하면 중복 처리 위험.
+- **Watchdog 방식** (Redisson 등): 락을 보유한 스레드가 살아있는 동안 주기적으로 TTL을 연장. 작업이 끝나면 명시적으로 해제. 장애 시에는 TTL이 만료되어 자동 해제.
+
+#### 재시도 전략
+
+락 획득 실패 시 바로 에러를 반환할지, 일정 횟수 재시도할지 결정해야 한다.
+
+| 전략 | 동작 | 적합한 상황 |
+|------|------|-------------|
+| 즉시 거부 | 락 없으면 바로 실패 | 사용자 직접 요청 (빠른 응답 필요) |
+| 스핀 락 | 짧은 간격으로 반복 시도 | 락 보유 시간이 매우 짧은 경우 |
+| 지수 백오프 | 재시도 간격을 점진적으로 늘림 | 배치, 백그라운드 작업 |
+
+현재 구현은 즉시 거부 방식. 결제는 사용자가 직접 요청하는 시나리오이므로 적합하다.
+
+#### Redlock 알고리즘
+
+단일 Redis 노드 장애 또는 Sentinel failover 중 동일 락이 두 클라이언트에 동시 부여될 수 있다. Redis 창시자 Salvatore Sanfilippo가 제안한 Redlock은 N개(보통 5개)의 독립 Redis 인스턴스 중 과반수(3개 이상)에서 락을 획득해야 유효한 락으로 인정한다.
+
+```
+클라이언트 → Redis-1, 2, 3, 4, 5에 동시 락 요청
+3개 이상 성공 + 총 소요 시간 < TTL → 락 획득 성공
+```
+
+다만 NTP 시계 동기화 오차, 프로세스 GC pause 등으로 완전한 안전성을 보장하지 않는다는 반론(Martin Kleppmann)도 있다. 중요한 결제 시스템에서는 DB unique 제약과 함께 이중 안전장치로 사용하는 것이 현실적이다.
+
+#### 모니터링
+
+Redis 분산 락 운영 시 추적해야 할 지표:
+
+| 지표 | 확인 방법 | 임계값 예시 |
+|------|-----------|-------------|
+| 메모리 사용률 | `INFO memory` → `used_memory_rss` | 70% 초과 시 알림 |
+| 락 획득 실패율 | 애플리케이션 메트릭 | 1% 초과 시 알림 |
+| 연결 수 | `INFO clients` → `connected_clients` | 최대 연결 수 80% 초과 시 |
+| 명령어 지연 | `INFO stats` → `instantaneous_ops_per_sec` | latency spike 감지 |
+| TTL 없는 키 | `INFO keyspace` | 락 키에 TTL 누락 감지 |
+
+```bash
+# Redis 메모리 사용량 확인
+redis-cli INFO memory | grep used_memory_human
+
+# TTL 없는 키 확인 (운영 환경에서는 SCAN 사용)
+redis-cli --scan --pattern "lock:*" | xargs -I{} redis-cli TTL {}
+```
+
 ### 멱등성 처리
 
 가맹점이 네트워크 타임아웃 등으로 같은 결제를 재시도할 때 중복 결제를 방지한다.
@@ -214,11 +299,20 @@ docker compose up -d
 - [ ] 대사 (Reconciliation)
 
 ### Phase 4 — 정산/빌링
-- [ ] Kafka 기반 정산 배치
-- [ ] 가맹점 정산금 계산
+- [ ] Settlement 엔티티 + 마이그레이션
+- [ ] PaymentCapturedEvent DTO (JSON 직렬화)
+- [ ] SettlementConsumer — PgFeePolicy 조회 → Settlement 생성
+- [ ] SettlementBatch — 매일 자정 PENDING → COMPLETED 처리
+- [ ] ShedLock (Redis 기반) — 다중 인스턴스 환경에서 배치 중복 실행 방지
+- [ ] 가맹점 정산금 조회 API
 
 ### Phase 5 — 운영
-- [ ] 모니터링 (메트릭 수집, 알림)
+- [ ] 모니터링 (Micrometer + Prometheus + Grafana 대시보드)
+- [ ] Redis 락 획득 실패율 메트릭 수집
+- [ ] Redis 메모리 사용량 알림 + TTL 누락 키 감지
+- [ ] Redis 캐시/락 인스턴스 분리
+- [ ] Lua 스크립트로 락 해제 원자성 보장
+- [ ] Watchdog 방식 TTL 자동 연장
 - [ ] 웹훅 (PG → 가맹점 비동기 알림)
 - [ ] 인증/인가 (가맹점 API Key)
 - [ ] 테스트는 Testcontainers로 변경

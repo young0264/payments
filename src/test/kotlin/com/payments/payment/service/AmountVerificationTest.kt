@@ -50,7 +50,7 @@ class AmountVerificationTest {
             )
         )
 
-        val payment = paymentTransactionService.approve("order-tampered", "key-tampered", requestAmount)
+        val payment = paymentTransactionService.approve("order-tampered", "key-tampered", requestAmount, merchantId = 1L)
 
         assertThat(payment.status).isEqualTo(PaymentStatus.FAILED)
         assertThat(payment.failReason).contains("금액 위변조 감지")
@@ -73,7 +73,7 @@ class AmountVerificationTest {
             )
         )
 
-        val payment = paymentTransactionService.approve("order-ok", "key-ok", amount)
+        val payment = paymentTransactionService.approve("order-ok", "key-ok", amount, merchantId = 1L)
 
         assertThat(payment.status).isEqualTo(PaymentStatus.APPROVED)
         assertThat(payment.pgTransactionId).isEqualTo("mock-tx-456")
