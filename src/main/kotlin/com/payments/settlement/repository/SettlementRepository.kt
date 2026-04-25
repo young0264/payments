@@ -11,6 +11,8 @@ interface SettlementRepository : JpaRepository<Settlement, Long> {
 
     fun existsByOrderId(orderId: String): Boolean
 
+    fun findAllByMerchantId(merchantId: Long): List<Settlement>
+
     @Modifying
     @Query("UPDATE Settlement s SET s.status = :status, s.settledAt = :settledAt WHERE s.status = 'PENDING'")
     fun completeAllPending(
