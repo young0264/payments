@@ -296,26 +296,29 @@ docker compose up -d
 
 ### Phase 3 — 원장/대사
 - [x] 복식부기 원장
-- [ ] 대사 (Reconciliation)
+- [x] 대사 (Reconciliation)
 
 ### Phase 4 — 정산/빌링
-- [ ] Settlement 엔티티 + 마이그레이션
-- [ ] PaymentCapturedEvent DTO (JSON 직렬화)
-- [ ] SettlementConsumer — PgFeePolicy 조회 → Settlement 생성
-- [ ] SettlementBatch — 매일 자정 PENDING → COMPLETED 처리
-- [ ] ShedLock (Redis 기반) — 다중 인스턴스 환경에서 배치 중복 실행 방지
-- [ ] 가맹점 정산금 조회 API
+- [x] Settlement 엔티티 + 마이그레이션
+- [x] PaymentCapturedEvent DTO (JSON 직렬화)
+- [x] SettlementConsumer — PgFeePolicy 조회 → Settlement 생성
+- [x] SettlementBatch — 매일 자정 PENDING → COMPLETED 처리
+- [x] 가맹점 정산금 조회 API
 
 ### Phase 5 — 운영
 - [ ] 모니터링 (Micrometer + Prometheus + Grafana 대시보드)
 - [ ] Redis 락 획득 실패율 메트릭 수집
 - [ ] Redis 메모리 사용량 알림 + TTL 누락 키 감지
-- [ ] Redis 캐시/락 인스턴스 분리
-- [ ] Lua 스크립트로 락 해제 원자성 보장
-- [ ] Watchdog 방식 TTL 자동 연장
 - [ ] 웹훅 (PG → 가맹점 비동기 알림)
 - [ ] 인증/인가 (가맹점 API Key)
 - [ ] 테스트는 Testcontainers로 변경
+
+### Phase 6 — 개선/고도화
+- [ ] ShedLock (Redis 기반) — 다중 인스턴스 환경에서 배치 중복 실행 방지
+- [ ] Lua 스크립트로 락 해제 원자성 보장
+- [ ] Watchdog 방식 TTL 자동 연장
+- [ ] Redlock 알고리즘 — 다중 Redis 노드 기반 락 안전성
+- [ ] Redis 캐시/락 인스턴스 분리
 
 
 ## 참고
