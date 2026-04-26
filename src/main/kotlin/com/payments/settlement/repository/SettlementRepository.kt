@@ -10,6 +10,7 @@ import java.time.LocalDateTime
 interface SettlementRepository : JpaRepository<Settlement, Long> {
 
     fun existsByOrderId(orderId: String): Boolean
+    fun findByOrderId(orderId: String): Settlement?
 
     fun findAllByMerchantId(merchantId: Long): List<Settlement>
 
