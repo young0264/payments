@@ -13,5 +13,8 @@ class Merchant(
     @Column(nullable = false, length = 100)
     val name: String,
 
+    @Column(nullable = false, unique = true, length = 64)
+    val apiKey: String,
+
     val createdAt: LocalDateTime = LocalDateTime.now(),
 )
