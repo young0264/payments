@@ -337,6 +337,10 @@ docker compose up -d
 - [ ] Redlock 알고리즘 — 다중 Redis 노드 기반 락 안전성
 - [ ] Redis 캐시/락 인스턴스 분리
 
+### Phase 7 — SDK/MSA
+- [ ] 가맹점용 SDK (Kotlin/Java 클라이언트 라이브러리)
+- [ ] MSA 분리 (결제/정산/대사 서비스 분리)
+
 
 ## 참고
 
@@ -353,3 +357,5 @@ docker compose up -d
 - [토스페이먼츠 멱등성 문서](https://docs.tosspayments.com/blog/what-is-idempotency)
 - [토스페이먼츠 승인/매입 문서](https://www.tosspayments.com/blog/articles/33907)
 - [토스페이먼츠 인증/인가 (API Key)](https://toss.tech/article/payments-legacy-4)
+- [토스페이먼츠 웹훅 헤더 스펙](https://docs.tosspayments.com/reference/using-api/webhook-events#%EC%9B%B9%ED%9B%85-%ED%97%A4%EB%8D%94)
+- [토스페이먼츠 JS SDK](https://docs.tosspayments.com/sdk/v2/js)
