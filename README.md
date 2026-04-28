@@ -359,3 +359,4 @@ docker compose up -d
 - [토스페이먼츠 인증/인가 (API Key)](https://toss.tech/article/payments-legacy-4)
 - [토스페이먼츠 웹훅 헤더 스펙](https://docs.tosspayments.com/reference/using-api/webhook-events#%EC%9B%B9%ED%9B%85-%ED%97%A4%EB%8D%94)
 - [토스페이먼츠 JS SDK](https://docs.tosspayments.com/sdk/v2/js)
+- [Stripe API Key 관리 (환경변수 보안 가이드)](https://docs.stripe.com/keys)
