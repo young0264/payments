@@ -7,14 +7,13 @@ import com.payments.payment.repository.PaymentRepository
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
+import com.payments.AbstractIntegrationTest
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.transaction.annotation.Transactional
 import java.math.BigDecimal
 
-@SpringBootTest
 @Transactional
-class PaymentServiceTest {
+class PaymentServiceTest : AbstractIntegrationTest() {
 
     @Autowired lateinit var paymentService: PaymentService
     @Autowired lateinit var paymentRepository: PaymentRepository

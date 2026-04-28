@@ -8,13 +8,12 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import com.payments.AbstractIntegrationTest
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.boot.test.context.SpringBootTest
 import java.math.BigDecimal
 import java.util.UUID
 
-@SpringBootTest
-class PaymentServiceTransactionTest {
+class PaymentServiceTransactionTest : AbstractIntegrationTest() {
 
     @Autowired lateinit var paymentService: PaymentService
     @Autowired lateinit var paymentTransactionService: PaymentTransactionService
