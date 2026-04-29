@@ -2,3 +2,7 @@ spring:
   datasource:
     url: jdbc:tc:mysql:8.0:///payments
     driver-class-name: org.testcontainers.jdbc.ContainerDatabaseDriver
+  kafka:
+    bootstrap-servers: localhost:9999
+    listener:
+      auto-startup: false
