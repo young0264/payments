@@ -1,4 +1,4 @@
-package com.payments.payment.service
+ package com.payments.payment.service
 
 import com.payments.common.exception.ErrorCode
 import com.payments.common.exception.PaymentException
@@ -7,16 +7,19 @@ import com.payments.payment.repository.PaymentRepository
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
-import com.payments.AbstractIntegrationTest
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.boot.test.context.SpringBootTest
+import org.springframework.test.context.bean.override.mockito.MockitoBean
 import org.springframework.transaction.annotation.Transactional
 import java.math.BigDecimal
 
+@SpringBootTest
 @Transactional
-class PaymentServiceTest : AbstractIntegrationTest() {
+class PaymentServiceTest {
 
     @Autowired lateinit var paymentService: PaymentService
     @Autowired lateinit var paymentRepository: PaymentRepository
+    @MockitoBean lateinit var paymentEventPublisher: PaymentEventPublisher
 
     @Test
     fun `결제 승인 성공`() {

@@ -11,14 +11,15 @@ import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
-import com.payments.AbstractIntegrationTest
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.test.context.bean.override.mockito.MockitoBean
 import org.springframework.transaction.annotation.Transactional
 import java.math.BigDecimal
 
+@SpringBootTest
 @Transactional
-class AmountVerificationTest : AbstractIntegrationTest() {
+class AmountVerificationTest {
 
     @Autowired lateinit var paymentTransactionService: PaymentTransactionService
     @Autowired lateinit var paymentRepository: PaymentRepository
