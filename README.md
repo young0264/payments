@@ -327,8 +327,8 @@ docker compose up -d
 - [ ] Redis 락 획득 실패율 메트릭 수집
 - [ ] Redis 메모리 사용량 알림 + TTL 누락 키 감지
 - [ ] 웹훅 (PG → 가맹점 비동기 알림)
-- [ ] 인증/인가 (가맹점 API Key)
-- [ ] 테스트는 Testcontainers로 변경
+- [x] 인증/인가 (가맹점 API Key)
+- [x] 테스트는 Testcontainers로 변경
 
 ### Phase 6 — 개선/고도화
 - [ ] ShedLock (Redis 기반) — 다중 인스턴스 환경에서 배치 중복 실행 방지
