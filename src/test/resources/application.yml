@@ -1,0 +1,4 @@
+spring:
+  datasource:
+    url: jdbc:tc:mysql:8.0:///payments
+    driver-class-name: org.testcontainers.jdbc.ContainerDatabaseDriver
