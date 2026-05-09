@@ -43,4 +43,7 @@ out/
 PG_ROUTING_PLAN.md
 
 ### Claude 로컬 설정 ###
-.claude/CLAUDE.local.md
+.claude/
+
+### Codex 로컬 설정 ###
+.codex/
